@@ -3,12 +3,12 @@
 The goal is to predict, at the moment a bike is handed out, whether it will come back late:
 more than 15 minutes after the planned return time (`y_overdue`).
 
-**Status:** exploratory data analysis is finished (`main.ipynb`, ending with a General Conclusion);
-no model has been trained yet.
+**Status:** exploratory data analysis, baselines, two tuned models and the final test evaluation
+are done (`main.ipynb`).
 
 | Path | What it is |
 |---|---|
-| `main.ipynb` | notebook: data loading, EDA, conclusions |
+| `main.ipynb` | notebook: data loading, EDA, conclusions, baselines, models, tuning, best model |
 | `dataset.csv` | one row is one checkout (39,344 rows, 27 columns, 2025-01-18 to 2026-09-30): features known at checkout time and the targets `y_overdue`, `y_lost` |
 | `requirements.txt` | Python dependencies |
 
@@ -44,12 +44,50 @@ overdue rate of 8.3%, so the classes are strongly imbalanced.
 
 Main findings (see the General Conclusion at the end of the notebook):
 
-- Use PR AUC as the main metric and stratified splits; validate on a time-based split.
+- Use PR AUC as the main metric. Split by time instead of a stratified split: the overdue rate drifts
+  over time and client-history features are built from the past, so shuffling would leak the future
+  into training.
 - The strongest signals are `plan_hours` and `price_total`, then `deposit_kind`, `client_residency`,
   `prepaid_share`, `first_visit`, weekends and the evening hours.
 - Missing client history is informative (10.5% overdue vs 6.8%), gaps in the card block look random.
 - No leakage found; `client_prev_lost`, `issued_by_employee_id` and one of `first_visit` /
   `client_prev_rentals` should be dropped as constant or redundant.
+
+## Modelling (in `main.ipynb`)
+
+1. Final cleaning: drop `first_visit` and `issued_by_employee_id` (and the constant `client_prev_lost`).
+2. Time-based split without shuffling: first 60% of checkouts for train, next 20% for validation, last 20% for test.
+   The test set is used only for the final evaluation.
+3. Baselines: the constant base rate and a logistic regression on `plan_hours` alone.
+4. Logistic regression with L2: median imputation with missing-value indicators and scaling for numeric
+   features, one-hot encoding for categorical ones; `C` is chosen by PR AUC on the validation set.
+5. `HistGradientBoostingClassifier`: categories as integer codes, missing values handled by the model;
+   hyperparameters are tuned in two rounds of random search over 4 time-based folds (`TimeSeriesSplit`)
+   on train + validation, and the number of trees is chosen on the same folds.
+6. Best model: `make_transformer`, `make_model`, `train` and `predict` in the last cells of the notebook;
+   the model is refit on train + validation and evaluated once on the test set.
+
+Test results (overdue rate in the test set: 7.6%):
+
+| Model | PR AUC | ROC AUC |
+|---|---|---|
+| Constant base rate | 0.076 | 0.5 |
+| Logistic regression, L2 | 0.177 | 0.721 |
+| `HistGradientBoostingClassifier` | 0.192 | 0.738 |
+
+### Conclusion
+
+The model is chosen and trained well: time-based split, tuning without the test set, the test set is used
+once, and two different model families give close results. The result is not outstanding: PR AUC is about
+2.5 times the base rate, ROC AUC is 0.74, and the gain over the logistic regression is small.
+
+Feature engineering from the existing columns had no effect: six derived features (price per hour, price
+per battery, deposit to price ratio, number of previous late returns, planned return hour and day of week)
+gave no gain in PR AUC over the 4 time-based folds on train + validation (0.230 vs 0.232 without them).
+
+The tuning picked trees with 2 leaves, so the signal is close to additive and further tuning or another
+model is unlikely to help. New informative features known at checkout time, not recombinations of the
+existing columns, are likely needed to improve the model (a hypothesis, not tested).
 
 ## Running
 
