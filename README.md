@@ -99,7 +99,17 @@ existing columns, are likely needed to improve the model (a hypothesis, not test
 `predict.py` is a FastAPI app: `POST /predict` takes one checkout as JSON (the 19 feature fields,
 see `test_request.json`) and returns the probability of an overdue return.
 
-Build and run:
+The service is deployed on Render: https://predict-rental-overdue.onrender.com/ (interactive docs at
+https://predict-rental-overdue.onrender.com/docs). Request it with the example checkout from this repository:
+
+```bash
+curl -X POST https://predict-rental-overdue.onrender.com/predict -H "Content-Type: application/json" -d "@test_request.json"
+```
+
+The service runs on the free plan and sleeps after a period of inactivity, so the first request can take
+about a minute.
+
+To run it locally, build and run:
 
 ```bash
 docker build -t overdue-api .
