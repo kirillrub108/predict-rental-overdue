@@ -14,7 +14,7 @@ are done (`main.ipynb`); the best model is trained by `train.py` and served by `
 | `model_hgb.bin` | pickled scikit-learn pipeline (preprocessing + `HistGradientBoostingClassifier`) |
 | `predict.py` | FastAPI app: `POST /predict` returns the probability of an overdue return |
 | `test_request.json` | example request body for `POST /predict` |
-| `Dockerfile`, `.dockerignore`, `requirements-api.txt` | container image of the prediction service |
+| `Dockerfile`, `.dockerignore` | container image of the prediction service |
 | `requirements.txt` | Python dependencies for the notebook and local runs |
 
 The data is synthetic: the signal is baked in by the generator, so the metrics of any model
@@ -124,7 +124,7 @@ Response:
 A request with missing fields gets HTTP 422 with the list of missing names. Interactive docs are at
 http://localhost:8000/docs.
 
-Without Docker: install `requirements-api.txt`, then `uvicorn predict:app --port 8000`.
+Without Docker: install `requirements.txt`, then `uvicorn predict:app --port 8000`. The container listens on the port from the `PORT` environment variable (default 8000), so it also runs on hosts such as Render.
 
 After retraining (`python train.py`) rebuild the image: `model_hgb.bin` is copied into it at build time.
 
