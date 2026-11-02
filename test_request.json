@@ -1,0 +1,21 @@
+{
+  "tenant": "synth-b",
+  "dow": 3,
+  "model": "Urban 250",
+  "deposit_kind": "cash",
+  "client_residency": "local",
+  "hour": 9,
+  "month": 10,
+  "plan_hours": 6.0,
+  "n_batteries": 2,
+  "deposit_amount": 2000.0,
+  "price_total": 1970.0,
+  "prepaid_share": 0.0,
+  "client_prev_rentals": 5,
+  "client_prev_late_rate": 0.0,
+  "client_prev_lost": 0,
+  "days_since_prev": 16.9980208333,
+  "is_weekend": false,
+  "block_missing": false,
+  "prev_late": false
+}
