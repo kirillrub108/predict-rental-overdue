@@ -4,13 +4,18 @@ The goal is to predict, at the moment a bike is handed out, whether it will come
 more than 15 minutes after the planned return time (`y_overdue`).
 
 **Status:** exploratory data analysis, baselines, two tuned models and the final test evaluation
-are done (`main.ipynb`).
+are done (`main.ipynb`); the best model is trained by `train.py` and served by `predict.py` (FastAPI, Docker).
 
 | Path | What it is |
 |---|---|
 | `main.ipynb` | notebook: data loading, EDA, conclusions, baselines, models, tuning, best model |
 | `dataset.csv` | one row is one checkout (39,344 rows, 27 columns, 2025-01-18 to 2026-09-30): features known at checkout time and the targets `y_overdue`, `y_lost` |
-| `requirements.txt` | Python dependencies |
+| `train.py` | trains the best model and saves it to `model_hgb.bin` |
+| `model_hgb.bin` | pickled scikit-learn pipeline (preprocessing + `HistGradientBoostingClassifier`) |
+| `predict.py` | FastAPI app: `POST /predict` returns the probability of an overdue return |
+| `test_request.json` | example request body for `POST /predict` |
+| `Dockerfile`, `.dockerignore`, `requirements-api.txt` | container image of the prediction service |
+| `requirements.txt` | Python dependencies for the notebook and local runs |
 
 The data is synthetic: the signal is baked in by the generator, so the metrics of any model
 trained on it will not carry over to real data. The generator is not part of this repository.
@@ -89,6 +94,40 @@ The tuning picked trees with 2 leaves, so the signal is close to additive and fu
 model is unlikely to help. New informative features known at checkout time, not recombinations of the
 existing columns, are likely needed to improve the model (a hypothesis, not tested).
 
+## Prediction service
+
+`predict.py` is a FastAPI app: `POST /predict` takes one checkout as JSON (the 19 feature fields,
+see `test_request.json`) and returns the probability of an overdue return.
+
+Build and run:
+
+```bash
+docker build -t overdue-api .
+docker run --rm -p 8000:8000 overdue-api
+```
+
+Request:
+
+```bash
+curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" -d "@test_request.json"
+```
+
+On Windows PowerShell use `curl.exe` instead of `curl` (`curl` is an alias of `Invoke-WebRequest`) and keep
+the quotes around `@test_request.json`.
+
+Response:
+
+```json
+{"overdue_probability": 0.0391}
+```
+
+A request with missing fields gets HTTP 422 with the list of missing names. Interactive docs are at
+http://localhost:8000/docs.
+
+Without Docker: install `requirements-api.txt`, then `uvicorn predict:app --port 8000`.
+
+After retraining (`python train.py`) rebuild the image: `model_hgb.bin` is copied into it at build time.
+
 ## Running
 
 Tested on Python 3.14.3.
@@ -100,7 +139,7 @@ Tested on Python 3.14.3.
    ```
 
 2. Install the packages from `requirements.txt` (ipykernel, numpy, pandas, matplotlib, seaborn,
-   scikit-learn, scipy):
+   scikit-learn, scipy, fastapi, uvicorn):
 
    ```bash
    # Windows

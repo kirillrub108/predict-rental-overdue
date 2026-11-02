@@ -27,7 +27,7 @@ CAT_COLS = ["tenant", "dow", "model", "deposit_kind", "client_residency"]
 
 FEATURES = CAT_COLS + NUM_COLS + BOOL_COLS
 
-df = df.dropna(subset=[TARGET]).reset_index(drop=True)   # у потерянных батарей нет y_overdue
+df = df.dropna(subset=[TARGET]).reset_index(drop=True)   # lost batteries have no y_overdue
 df[TARGET] = df[TARGET].astype("int8")
 df[BOOL_COLS] = df[BOOL_COLS].astype("float32")          # pd.NA -> NaN
 
