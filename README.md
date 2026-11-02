@@ -128,8 +128,16 @@ the quotes around `@test_request.json`.
 Response:
 
 ```json
-{"overdue_probability": 0.0391}
+{
+  "overdue_probability": 0.8227,
+  "risk": "high",
+  "message": "Warning: high risk, 82.3% chance of an overdue return (average is about 8%)."
+}
 ```
+
+`risk` is `high` for a probability of 0.20 or more (on the test set this flags 8% of checkouts, 24% of them are
+overdue against a base rate of 7.6%), `low` below 0.08 and `medium` in between. The thresholds are `HIGH` and
+`LOW` in `predict.py`.
 
 A request with missing fields gets HTTP 422 with the list of missing names. Interactive docs are at
 http://localhost:8000/docs.
